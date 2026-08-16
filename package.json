@@ -1,0 +1,48 @@
+{
+  "name": "dsh-plugin-voice-interview-coach",
+  "version": "0.1.0",
+  "description": "🎙️ Voice Interview Coach — a DSH (DeepSeek Harness) plugin that runs a natural-language-graded, voice-based mock interview using the candidate's project, language, resume and target role, then produces a gap-analysis review with Markdown export and persistent memory.",
+  "license": "MIT",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "interview",
+    "voice",
+    "speech",
+    "mock-interview",
+    "resume",
+    "ai-coach",
+    "deepseek"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "dsh": {
+    "id": "voice-interview-coach",
+    "name": "Voice Interview Coach",
+    "kind": "web",
+    "category": "productivity",
+    "icon": "assets/icon.svg",
+    "host": "src/host.js",
+    "client": "src/client.js",
+    "requiredServices": ["llm", "fs"],
+    "permissions": ["workspace-write"]
+  },
+  "files": [
+    "src",
+    "assets",
+    "docs",
+    "README.md",
+    "README.zh.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "lint:meta": "node scripts/verify-package.js",
+    "pack": "npm pack --dry-run"
+  }
+}
