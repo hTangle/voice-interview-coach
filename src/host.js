@@ -273,6 +273,8 @@ return {
 
     // ---------- RPC methods ----------
 
+    harness.handle('wake', async () => ({ ok: true }))
+
     harness.handle('parseResume', async (args) => {
       try {
         const text = await parseResume(args)

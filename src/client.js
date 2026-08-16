@@ -589,9 +589,42 @@ return {
       )
     }
 
+    // Register the main lobby/call/review UI in the cordis_run card.
     slots.inject('tool.view.cordis', () => slots.register(
       { name: 'tool.view.cordis', key: 'self' },
       () => React.createElement(App),
+    ))
+
+    // Register a small entry button in the session header so the interview is
+    // reachable even if the run card is scrolled away. Clicking it scrolls
+    // the most recent vint2 card into view.
+    slots.inject('conversation.session.header.actions', () => slots.register(
+      {
+        name: 'conversation.session.header.actions',
+        id: 'voice-interview-coach-launch',
+        order: 100,
+        label: '语音面试',
+      },
+      () => {
+        const btn = document.createElement('button')
+        btn.textContent = '🎙️ 语音面试'
+        btn.style.cssText = [
+          'background:linear-gradient(135deg,#3b82f6,#2563eb)',
+          'color:white;border:0;border-radius:999px',
+          'padding:6px 14px;font-weight:700;cursor:pointer;font-size:12px',
+        ].join(';')
+        btn.onclick = () => {
+          const card = document.querySelector('.vint2')
+          if (card && card.closest) {
+            const host = card.closest('[class*=\"card\"],[class*=\"Card\"],[data-slot]') || card
+            host.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            host.style.outline = '2px solid #60a5fa'
+            setTimeout(() => { host.style.outline = '' }, 1200)
+          }
+          host.call('wake', {}).catch(() => {})
+        }
+        return btn
+      },
     ))
   },
 }
