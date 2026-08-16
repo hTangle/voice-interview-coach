@@ -15,7 +15,7 @@ return {
     const slots = ctx.get('slots')
     if (!slots) return
 
-    const disposeStyle = styles.insert(`
+    const VINT2_CSS = `
       .vint2 { font: 14px/1.55 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif; color:#e8ecf3; background:linear-gradient(160deg,#0b1220 0%,#111a2e 55%,#0b1220 100%); border-radius:14px; overflow:hidden; position:relative; min-height:520px; display:flex; flex-direction:column; }
       .vint2 * { box-sizing:border-box; }
       .vint2-topbar { display:flex; align-items:center; gap:10px; padding:12px 16px; background:rgba(255,255,255,.04); border-bottom:1px solid rgba(255,255,255,.06); }
@@ -123,7 +123,22 @@ return {
       @keyframes vint2Pulse { 0%{transform:scale(1);opacity:.8} 70%{transform:scale(1.25);opacity:0} 100%{transform:scale(1.25);opacity:0} }
       @keyframes vint2Speak { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
       @keyframes vint2Wave { 0%,100%{height:8px} 50%{height:30px} }
-    `)
+    `
+
+    // Inject globally into <head> so styles apply inside shell.overlay too
+    // (styles.insert is scoped and does not reach that slot).
+    let disposeStyle = () => {}
+    try {
+      if (typeof document !== 'undefined' && document.head) {
+        const styleEl = document.createElement('style')
+        styleEl.setAttribute('data-vint2', 'true')
+        styleEl.textContent = VINT2_CSS
+        document.head.appendChild(styleEl)
+        disposeStyle = () => { if (styleEl.parentNode) styleEl.parentNode.removeChild(styleEl) }
+      }
+    } catch (_) {
+      try { if (typeof styles !== 'undefined' && styles.insert) { const d = styles.insert(VINT2_CSS); if (d) disposeStyle = d } } catch (__) {}
+    }
     ctx.effect(() => disposeStyle)
 
     const TYPES = ['项目深挖', '系统设计', '语言基础', '八股/原理', '行为面试', '线上故障', '算法/编码', '工程实践']
