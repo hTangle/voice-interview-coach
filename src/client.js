@@ -36,6 +36,28 @@ return {
       .vint2-avatar.speaking { animation:vint2Speak .9s ease-in-out infinite; }
       .vint2-avatar svg { width:130px; height:130px; }
       .vint2-mouth { transform-origin:55% 70%; transition:transform .08s; }
+      .vint2-avatar.thinking { animation: vint2Think 2.4s ease-in-out infinite; }
+      @keyframes vint2Think {
+        0%,100% { transform: translateY(0) rotate(-2deg); }
+        50%     { transform: translateY(-2px) rotate(2deg); }
+      }
+      .vint2-eye-shift { transform-origin: center; animation: vint2EyeDart 2.4s ease-in-out infinite; }
+      @keyframes vint2EyeDart {
+        0%,100% { transform: translate(0,0); }
+        30%     { transform: translate(2px,-2px); }
+        60%     { transform: translate(-2px,-1px); }
+      }
+      .vint2-blink { transform-origin: 50% 44%; animation: vint2Blink 4.2s infinite; }
+      @keyframes vint2Blink {
+        0%,92%,100% { transform: scaleY(0); }
+        95%         { transform: scaleY(1); }
+      }
+      .vint2-thinking { display:flex; align-items:center; gap:8px; color:#93c5fd; font-size:12px; font-weight:600; }
+      .vint2-dots { display:inline-flex; gap:4px; }
+      .vint2-dots span { width:6px; height:6px; border-radius:50%; background:#60a5fa; animation:vint2Dot 1.1s ease-in-out infinite; }
+      .vint2-dots span:nth-child(2){ animation-delay:.18s }
+      .vint2-dots span:nth-child(3){ animation-delay:.36s }
+      @keyframes vint2Dot { 0%,80%,100%{transform:scale(.6);opacity:.4} 40%{transform:scale(1);opacity:1} }
       .vint2-name { text-align:center; }
       .vint2-name .n { font-size:18px; font-weight:700; letter-spacing:.3px; }
       .vint2-name .r { font-size:12px; opacity:.65; margin-top:2px; }
@@ -105,8 +127,10 @@ return {
     const TYPES = ['项目深挖', '系统设计', '语言基础', '八股/原理', '行为面试', '线上故障', '算法/编码', '工程实践']
     const h = (t, p, c) => React.createElement(t, p, c)
 
-    function InterviewerAvatar({ speaking }) {
-      return h('div', { className: 'vint2-avatar' + (speaking ? ' speaking' : '') },
+    function InterviewerAvatar({ speaking, thinking }) {
+      return h('div', {
+        className: 'vint2-avatar' + (speaking ? ' speaking' : '') + (thinking ? ' thinking' : ''),
+      },
         speaking && h('span', { className: 'vint2-ring r1' }),
         speaking && h('span', { className: 'vint2-ring r2' }),
         speaking && h('span', { className: 'vint2-ring r3' }),
@@ -119,19 +143,36 @@ return {
           React.createElement('path', { d: 'M28 95 C28 78 72 78 72 95 Z', fill: '#2563eb' }),
           React.createElement('ellipse', { cx: 50, cy: 46, rx: 22, ry: 25, fill: 'url(#v2g)' }),
           React.createElement('path', { d: 'M28 40 C28 22 72 22 72 40 C66 32 60 30 50 30 C40 30 33 32 28 40 Z', fill: '#1f2937' }),
+          // glasses frames
           React.createElement('circle', { cx: 42, cy: 48, r: 5, fill: 'none', stroke: '#111827', strokeWidth: 1.6 }),
           React.createElement('circle', { cx: 58, cy: 48, r: 5, fill: 'none', stroke: '#111827', strokeWidth: 1.6 }),
           React.createElement('line', { x1: 47, y1: 48, x2: 53, y2: 48, stroke: '#111827', strokeWidth: 1.4 }),
-          React.createElement('circle', { cx: 42, cy: 48, r: 1.4, fill: '#111827' }),
-          React.createElement('circle', { cx: 58, cy: 48, r: 1.4, fill: '#111827' }),
+          // eyes (look around while thinking, blink periodically)
+          React.createElement('g', { className: 'vint2-eye-shift' },
+            React.createElement('circle', { cx: 42, cy: 48, r: 1.4, fill: '#111827' }),
+            React.createElement('circle', { cx: 58, cy: 48, r: 1.4, fill: '#111827' })),
+          // blink: a skin-colored eyelid periodically covers the eye line
+          React.createElement('path', {
+            className: 'vint2-blink',
+            d: 'M34 48 Q50 43 66 48 L66 50 Q50 55 34 50 Z',
+            fill: 'url(#v2g)',
+          }),
           React.createElement('g', {
             className: 'vint2-mouth',
-            style: speaking ? { transform: 'scaleY(1.4)' } : { transform: 'scaleY(1)' },
+            style: speaking
+              ? { transform: 'scaleY(1.4)' }
+              : thinking
+                ? { transform: 'scaleY(0.5) translateY(2px)' }
+                : { transform: 'scaleY(1)' },
           },
             React.createElement('path', {
-              d: speaking ? 'M42 64 Q50 72 58 64 Q50 68 42 64 Z' : 'M44 65 Q50 68 56 65',
-              fill: speaking ? '#7f1d1d' : '#7c2d12',
-              stroke: '#451a03', strokeWidth: .8,
+              d: speaking
+                ? 'M42 64 Q50 72 58 64 Q50 68 42 64 Z'
+                : thinking
+                  ? 'M44 66 Q50 67 56 66'
+                  : 'M44 65 Q50 68 56 65',
+              fill: speaking ? '#7f1d1d' : 'none',
+              stroke: '#451a03', strokeWidth: 1.2,
             }))
         )
       )
@@ -462,11 +503,15 @@ return {
               ? React.createElement('video', { ref: setVideoEl, autoPlay: true, muted: true, playsInline: true })
               : h('div', { className: 'off' }, '📷', '摄像头未开启')),
           h('div', { className: 'vint2-avatar-wrap' },
-            React.createElement(InterviewerAvatar, { speaking: speaking }),
+            React.createElement(InterviewerAvatar, { speaking: speaking, thinking: thinking }),
             h('div', { className: 'vint2-name' },
-              h('div', { className: 'n' }, '面试官 · Alex'),
+              h('div', { className: 'n' }, thinking ? '面试官 · Alex 思考中' : '面试官 · Alex'),
               h('div', { className: 'r' }, (profile.targetRole || '技术面试') + ' · ' + (profile.seniority || '资深'))),
-            h('div', { className: 'vint2-caption' }, caption || '（等待面试官提问…）'),
+            thinking
+              ? h('div', { className: 'vint2-thinking' },
+                h('span', { className: 'vint2-dots' }, h('span'), h('span'), h('span')),
+                '正在思考下一个问题…')
+              : h('div', { className: 'vint2-caption' }, caption || '（等待面试官提问…）'),
             listening && h('div', { className: 'vint2-wave listening' },
               h('span'), h('span'), h('span'), h('span'), h('span'), h('span'), h('span'))
           )),
