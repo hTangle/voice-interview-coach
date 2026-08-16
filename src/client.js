@@ -32,11 +32,13 @@ return {
       .vint2-ring.r1 { inset:-18px; animation:vint2Pulse 2.6s ease-out infinite; }
       .vint2-ring.r2 { inset:-18px; animation:vint2Pulse 2.6s ease-out .9s infinite; }
       .vint2-ring.r3 { inset:-18px; animation:vint2Pulse 2.6s ease-out 1.8s infinite; }
-      .vint2-avatar { width:168px; height:168px; border-radius:50%; background:radial-gradient(circle at 30% 25%,#3b82f6 0%,#1e3a8a 70%,#0b1220 100%); box-shadow:0 20px 60px rgba(59,130,246,.35), inset 0 -10px 30px rgba(0,0,0,.4); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+      .vint2-avatar { width:168px; height:168px; border-radius:50%; background:radial-gradient(circle at 30% 25%,#3b82f6 0%,#1e3a8a 70%,#0b1220 100%); box-shadow:0 20px 60px rgba(59,130,246,.35), inset 0 -10px 30px rgba(0,0,0,.4); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; animation:vint2Breathe 4.5s ease-in-out infinite; }
       .vint2-avatar.speaking { animation:vint2Speak .9s ease-in-out infinite; }
-      .vint2-avatar svg { width:130px; height:130px; }
-      .vint2-mouth { transform-origin:55% 70%; transition:transform .08s; }
       .vint2-avatar.thinking { animation: vint2Think 2.4s ease-in-out infinite; }
+      .vint2-avatar.nodding { animation: vint2Nod 1.5s ease-in-out infinite; }
+      .vint2-avatar svg { width:150px; height:150px; display:block; }
+      @keyframes vint2Breathe { 0%,100%{transform:scale(1)} 50%{transform:scale(1.012)} }
+      @keyframes vint2Nod { 0%,100%{transform:rotate(-1.5deg) translateY(0)} 50%{transform:rotate(1.5deg) translateY(3px)} }
       @keyframes vint2Think {
         0%,100% { transform: translateY(0) rotate(-2deg); }
         50%     { transform: translateY(-2px) rotate(2deg); }
@@ -127,10 +129,36 @@ return {
     const TYPES = ['项目深挖', '系统设计', '语言基础', '八股/原理', '行为面试', '线上故障', '算法/编码', '工程实践']
     const h = (t, p, c) => React.createElement(t, p, c)
 
-    function InterviewerAvatar({ speaking, thinking }) {
-      return h('div', {
-        className: 'vint2-avatar' + (speaking ? ' speaking' : '') + (thinking ? ' thinking' : ''),
-      },
+    function InterviewerAvatar({ speaking, thinking, listening }) {
+      const mouthRef = React.useRef(null)
+      React.useEffect(() => {
+        if (!speaking) {
+          if (mouthRef.current) mouthRef.current.style.transform = ''
+          return
+        }
+        // Drive mouth open/close on a randomized cadence. Feels natural
+        // without needing an audio analyser (TTS audio isn't trivially
+        // routable into Web Audio when using SpeechSynthesis).
+        let stopped = false
+        const tick = () => {
+          if (stopped || !mouthRef.current) return
+          const open = Math.random()
+          const scaleY = 0.4 + open * 1.8
+          const translateY = -(open * 1.5)
+          mouthRef.current.style.transform =
+            'scaleY(' + scaleY.toFixed(2) + ') translateY(' + translateY.toFixed(1) + 'px)'
+          setTimeout(tick, 90 + Math.random() * 130)
+        }
+        tick()
+        return () => { stopped = true; if (mouthRef.current) mouthRef.current.style.transform = '' }
+      }, [speaking])
+
+      const cls = 'vint2-avatar' +
+        (speaking ? ' speaking' : '') +
+        (thinking ? ' thinking' : '') +
+        (listening ? ' nodding' : '')
+
+      return h('div', { className: cls },
         speaking && h('span', { className: 'vint2-ring r1' }),
         speaking && h('span', { className: 'vint2-ring r2' }),
         speaking && h('span', { className: 'vint2-ring r3' }),
@@ -138,32 +166,40 @@ return {
           React.createElement('defs', null,
             React.createElement('linearGradient', { id: 'v2g', x1: 0, y1: 0, x2: 0, y2: 1 },
               React.createElement('stop', { offset: 0, stopColor: '#fde68a' }),
-              React.createElement('stop', { offset: 1, stopColor: '#f59e0b' }))),
-          React.createElement('path', { d: 'M20 95 C20 72 80 72 80 95 Z', fill: '#1e3a8a' }),
+              React.createElement('stop', { offset: 1, stopColor: '#f59e0b' })),
+            React.createElement('linearGradient', { id: 'v2suit', x1: 0, y1: 0, x2: 0, y2: 1 },
+              React.createElement('stop', { offset: 0, stopColor: '#1e3a8a' }),
+              React.createElement('stop', { offset: 1, stopColor: '#0b1b3a' }))),
+          // shoulders / suit
+          React.createElement('path', { d: 'M20 95 C20 72 80 72 80 95 Z', fill: 'url(#v2suit)' }),
           React.createElement('path', { d: 'M28 95 C28 78 72 78 72 95 Z', fill: '#2563eb' }),
+          React.createElement('path', { d: 'M46 82 L50 92 L54 82 Z', fill: '#f8fafc' }),
+          React.createElement('path', { d: 'M49 84 L50 95', stroke: '#1e40af', strokeWidth: .8 }),
+          // head
           React.createElement('ellipse', { cx: 50, cy: 46, rx: 22, ry: 25, fill: 'url(#v2g)' }),
+          // hair
           React.createElement('path', { d: 'M28 40 C28 22 72 22 72 40 C66 32 60 30 50 30 C40 30 33 32 28 40 Z', fill: '#1f2937' }),
           // glasses frames
           React.createElement('circle', { cx: 42, cy: 48, r: 5, fill: 'none', stroke: '#111827', strokeWidth: 1.6 }),
           React.createElement('circle', { cx: 58, cy: 48, r: 5, fill: 'none', stroke: '#111827', strokeWidth: 1.6 }),
           React.createElement('line', { x1: 47, y1: 48, x2: 53, y2: 48, stroke: '#111827', strokeWidth: 1.4 }),
-          // eyes (look around while thinking, blink periodically)
-          React.createElement('g', { className: 'vint2-eye-shift' },
+          // eyes — during thinking they dart; during listening they stay steady
+          React.createElement('g', { className: thinking ? 'vint2-eye-shift' : '' },
             React.createElement('circle', { cx: 42, cy: 48, r: 1.4, fill: '#111827' }),
             React.createElement('circle', { cx: 58, cy: 48, r: 1.4, fill: '#111827' })),
-          // blink: a skin-colored eyelid periodically covers the eye line
+          // blink eyelid (covers eyes periodically)
           React.createElement('path', {
             className: 'vint2-blink',
             d: 'M34 48 Q50 43 66 48 L66 50 Q50 55 34 50 Z',
             fill: 'url(#v2g)',
           }),
+          // mouth
           React.createElement('g', {
+            ref: mouthRef,
             className: 'vint2-mouth',
-            style: speaking
-              ? { transform: 'scaleY(1.4)' }
-              : thinking
-                ? { transform: 'scaleY(0.5) translateY(2px)' }
-                : { transform: 'scaleY(1)' },
+            style: thinking
+              ? { transform: 'scaleY(0.5) translateY(2px)' }
+              : { transform: 'scaleY(1)' },
           },
             React.createElement('path', {
               d: speaking
@@ -173,6 +209,17 @@ return {
                   : 'M44 65 Q50 68 56 65',
               fill: speaking ? '#7f1d1d' : 'none',
               stroke: '#451a03', strokeWidth: 1.2,
+            })),
+          // hand-on-chin while thinking: a simple hand/forearm rising from the
+          // bottom-left of the avatar.
+          thinking && React.createElement('g', null,
+            React.createElement('path', {
+              d: 'M14 96 C18 86 26 80 34 78 C36 78 38 80 37 82 C33 86 28 90 24 96 Z',
+              fill: 'url(#v2g)',
+            }),
+            React.createElement('ellipse', { cx: 35, cy: 76, rx: 5, ry: 4, fill: 'url(#v2g)' }),
+            React.createElement('path', {
+              d: 'M14 96 L24 96 L22 90 Z', fill: '#1e3a8a',
             }))
         )
       )
@@ -503,7 +550,7 @@ return {
               ? React.createElement('video', { ref: setVideoEl, autoPlay: true, muted: true, playsInline: true })
               : h('div', { className: 'off' }, '📷', '摄像头未开启')),
           h('div', { className: 'vint2-avatar-wrap' },
-            React.createElement(InterviewerAvatar, { speaking: speaking, thinking: thinking }),
+            React.createElement(InterviewerAvatar, { speaking: speaking, thinking: thinking, listening: listening }),
             h('div', { className: 'vint2-name' },
               h('div', { className: 'n' }, thinking ? '面试官 · Alex 思考中' : '面试官 · Alex'),
               h('div', { className: 'r' }, (profile.targetRole || '技术面试') + ' · ' + (profile.seniority || '资深'))),
