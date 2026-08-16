@@ -595,21 +595,77 @@ return {
       () => React.createElement(App),
     ))
 
-    // Register a small entry button in the session header so the interview is
-    // reachable even if the run card is scrolled away. The slot is rendered
-    // through React, so we must return a React element — NOT a raw DOM node.
+    // Standalone overlay: floating action button + full-screen modal.
+    // This works even if the run card is collapsed or scrolled out of the
+    // DOM, because shell.overlay is always mounted.
+    function OverlayApp() {
+      const [open, setOpen] = React.useState(false)
+      React.useEffect(() => {
+        // Also allow other entries (e.g. the header button) to open us
+        // via a custom window event.
+        const handler = () => setOpen(true)
+        window.addEventListener('vint2:open', handler)
+        return () => window.removeEventListener('vint2:open', handler)
+      }, [])
+      return React.createElement(
+        React.Fragment, null,
+        React.createElement(
+          'button',
+          {
+            onClick: () => setOpen(v => !v),
+            title: open ? '关闭语音面试' : '打开语音面试',
+            style: {
+              position: 'fixed', right: 24, bottom: 24, zIndex: 2147483000,
+              width: 60, height: 60, borderRadius: '50%',
+              background: open
+                ? 'linear-gradient(135deg,#ef4444,#b91c1c)'
+                : 'linear-gradient(135deg,#3b82f6,#2563eb)',
+              color: 'white', border: 0, cursor: 'pointer', fontSize: 26,
+              boxShadow: '0 12px 32px rgba(37,99,235,.45)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            },
+          },
+          open ? '✕' : '🎙️',
+        ),
+        open && React.createElement(
+          'div',
+          {
+            style: {
+              position: 'fixed', inset: 0, zIndex: 2147483001,
+              background: 'rgba(2,6,23,.72)', backdropFilter: 'blur(6px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: 24,
+            },
+            onClick: (e) => { if (e.target === e.currentTarget) setOpen(false) },
+          },
+          React.createElement(
+            'div',
+            {
+              style: {
+                width: '100%', maxWidth: 880, maxHeight: '92vh',
+                borderRadius: 16, overflow: 'hidden',
+                boxShadow: '0 30px 80px rgba(0,0,0,.6)',
+                background: '#0b1220',
+              },
+            },
+            React.createElement(App),
+          ),
+        ),
+      )
+    }
+    slots.inject('shell.overlay', () => slots.register(
+      { name: 'shell.overlay', id: 'voice-interview-coach-overlay', order: 100, label: '语音面试' },
+      () => React.createElement(OverlayApp),
+    ))
+
+    // Header button: dispatch a window event so the overlay opens reliably,
+    // regardless of whether the run card is in the DOM.
     function LaunchButton() {
       return React.createElement(
         'button',
         {
           onClick: () => {
-            const card = document.querySelector('.vint2')
-            if (card) {
-              const hostEl = card.closest('[class*="card"],[class*="Card"],[data-slot]') || card
-              hostEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
-              hostEl.style.outline = '2px solid #60a5fa'
-              setTimeout(() => { hostEl.style.outline = '' }, 1200)
-            }
+            try { window.dispatchEvent(new CustomEvent('vint2:open')) } catch (_) {}
             host.call('wake', {}).catch(() => {})
           },
           style: {
