@@ -129,6 +129,32 @@ return {
     const TYPES = ['项目深挖', '系统设计', '语言基础', '八股/原理', '行为面试', '线上故障', '算法/编码', '工程实践']
     const h = (t, p, c) => React.createElement(t, p, c)
 
+    // Error boundary so that if App throws during render, the user sees the
+    // actual error instead of a blank modal.
+    class Vint2ErrorBoundary extends React.Component {
+      constructor(props) {
+        super(props)
+        this.state = { error: null }
+      }
+      static getDerivedStateFromError(error) { return { error } }
+      componentDidCatch(error, info) {
+        // Keep a trace on the console for deeper debugging.
+        try { console.error('[vint2] render error:', error, info) } catch (_) {}
+      }
+      render() {
+        if (this.state.error) {
+          const err = this.state.error
+          return React.createElement(
+            'div',
+            { style: { padding: 24, color: '#fecaca', fontFamily: 'monospace', fontSize: 12, whiteSpace: 'pre-wrap', overflow: 'auto', maxHeight: '80vh' } },
+            '面试面板渲染出错：\n\n' + (err && err.message ? err.message : String(err)) +
+            '\n\n' + (err && err.stack ? err.stack : '')
+          )
+        }
+        return this.props.children
+      }
+    }
+
     function InterviewerAvatar({ speaking, thinking, listening }) {
       const mouthRef = React.useRef(null)
       React.useEffect(() => {
@@ -445,13 +471,13 @@ return {
             h('h2', null, '准备进入模拟面试间'),
             h('p', null, '对面将由 AI 面试官扮演真人角色。建议打开摄像头，进入更接近真实视频面试的状态。'),
             h('div', { className: 'vint2-grid' },
-              h('label', { className: 'vint2-field full' },
+              h('div', { className: 'vint2-field full' },
                 h('label', null, '目标岗位 / 难度（自然语言）'),
                 h('input', { value: profile.targetRole, onChange: e => update('targetRole', e.target.value), placeholder: '例如：高级后端开发工程师，要求高并发和系统设计' })),
-              h('label', { className: 'vint2-field full' },
+              h('div', { className: 'vint2-field full' },
                 h('label', null, '面试风格 / 考察重点'),
                 h('input', { value: profile.seniority, onChange: e => update('seniority', e.target.value) })),
-              h('label', { className: 'vint2-field full' },
+              h('div', { className: 'vint2-field full' },
                 h('label', null, '题型（多选）'),
                 h('div', { className: 'vint2-chips' },
                   TYPES.map(t => h('div', {
@@ -459,13 +485,13 @@ return {
                     className: 'vint2-chip' + (profile.questionTypes.includes(t) ? ' on' : ''),
                     onClick: () => toggleType(t),
                   }, t)))),
-              h('label', { className: 'vint2-field' },
+              h('div', { className: 'vint2-field' },
                 h('label', null, '项目/经历'),
                 h('input', { value: profile.project, onChange: e => update('project', e.target.value) })),
-              h('label', { className: 'vint2-field' },
+              h('div', { className: 'vint2-field' },
                 h('label', null, '编程语言'),
                 h('input', { value: profile.language, onChange: e => update('language', e.target.value) })),
-              h('label', { className: 'vint2-field full' },
+              h('div', { className: 'vint2-field full' },
                 h('label', null, '上传简历（PDF/DOCX/TXT/MD，≤5MB）'),
                 h('label', { className: 'vint2-file' },
                   '📄 选择简历文件',
@@ -474,10 +500,10 @@ return {
                     accept: '.txt,.md,.markdown,.json,.csv,.pdf,.docx,text/*,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                     onChange: onUpload,
                   }))),
-              h('label', { className: 'vint2-field full' },
+              h('div', { className: 'vint2-field full' },
                 h('label', null, '简历内容（可继续编辑）'),
                 h('textarea', { value: profile.resume, onChange: e => update('resume', e.target.value) })),
-              h('label', { className: 'vint2-field' },
+              h('div', { className: 'vint2-field' },
                 h('label', null, '题目数量'),
                 h('input', {
                   type: 'number', min: 3, max: 15,
@@ -592,7 +618,7 @@ return {
     // Register the main lobby/call/review UI in the cordis_run card.
     slots.inject('tool.view.cordis', () => slots.register(
       { name: 'tool.view.cordis', key: 'self' },
-      () => React.createElement(App),
+      () => React.createElement(Vint2ErrorBoundary, null, React.createElement(App)),
     ))
 
     // Standalone overlay: floating action button + full-screen modal.
@@ -643,12 +669,12 @@ return {
             {
               style: {
                 width: '100%', maxWidth: 880, maxHeight: '92vh',
-                borderRadius: 16, overflow: 'hidden',
+                borderRadius: 16, overflow: 'auto',
                 boxShadow: '0 30px 80px rgba(0,0,0,.6)',
                 background: '#0b1220',
               },
             },
-            React.createElement(App),
+            React.createElement(Vint2ErrorBoundary, null, React.createElement(App)),
           ),
         ),
       )
